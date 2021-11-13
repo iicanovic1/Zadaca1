@@ -117,7 +117,9 @@ bool DvostrukaLista<T>::prethodni() {
         tekuci = tekuci->prethodni;
         lduzina--;
         dduzina++;
+        return true;
     }
+    return false;
 }
 
 template<typename T>
@@ -126,7 +128,9 @@ bool DvostrukaLista<T>::sljedeci() {
         tekuci = tekuci->sljedeci;
         dduzina--;
         lduzina++;
+        return true;
     }
+    return false;
 }
 
 template<typename T>
