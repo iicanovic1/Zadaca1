@@ -1,5 +1,6 @@
 #include <iostream>
 #include <new>
+using std::cout;
 
 template <typename T> class Lista {
 private:
@@ -193,7 +194,7 @@ void DvostrukaLista<T>::obrisi() {
     privremeni->sljedeci->prethodni = tekuci;
     tekuci->sljedeci = privremeni->sljedeci;
     delete privremeni;
-    if(dduzina == 1) {
+    if(dduzina == 1 && brojElemenata()!= 1) {
         tekuci = tekuci->prethodni;
         lduzina--;
     }else {
