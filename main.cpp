@@ -43,6 +43,9 @@ struct Cvor{
     }
 };
 
+template <typename Tip>
+class Iterator; // Predefinisana klasa iterator
+
 template <typename T> class DvostrukaLista : public Lista<T> {
 private:
     Cvor<T> *pocetakListe = nullptr;
@@ -76,8 +79,53 @@ public:
     DvostrukaLista(DvostrukaLista<T> &&lista); //testirano
     template<typename T1>
     friend void ispisiDvostruka ( DvostrukaLista<T1> lista); //testirano
+    friend class Iterator<T>;
+
+
 
 };
+template <typename T>
+class Iterator {
+    Cvor<T> *trenutniLista;
+    Cvor<T> *pocetakLista;
+    const DvostrukaLista<T> *lista;
+
+public:
+    bool slijedeci() {
+        if(trenutniLista->sljedeci->sljedeci->sljedeci != nullptr) {
+            trenutniLista = trenutniLista->sljedeci;
+            return true;
+        }
+        return false;
+    }
+    T element() {
+        return trenutniLista->sljedeci->element;
+    }
+    void pocetak() {
+        trenutniLista = pocetakLista;
+    }
+
+    Iterator(const Lista<T> *dvostrukaLista){
+        lista = (const DvostrukaLista<T> *) dvostrukaLista;
+        trenutniLista = lista->pocetakListe;
+        pocetakLista = lista->pocetakListe;
+    }
+};
+
+template <typename T>
+T dajMaksimum(const Lista<T> &lista)
+{
+    Iterator<T> iterator = Iterator<T>(&lista);
+    T maxEl;
+    if(lista.brojElemenata() != 0)
+        maxEl = iterator.element();
+else throw std::domain_error("Prazna Lista!!!!");
+    while (iterator.slijedeci()){
+        if(iterator.element() > maxEl)
+            maxEl = iterator.element();
+    }
+    return maxEl;
+}
 
 template<typename T>
 void ispisiDvostruka(DvostrukaLista<T> lista) {
@@ -391,23 +439,27 @@ bool testOperatorUglaste (){
     return true;
 }
 
+template<typename T>
+bool testDajMaximum (){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIza(1);
+    testnaLista.dodajIza(2);
+    testnaLista.dodajIza(3);
+    testnaLista.dodajIza(4);
+    testnaLista.dodajIza(5);
+    std::cout <<dajMaksimum(testnaLista)<<" ";
+    return true;
+}
+
 int main() {
-    DvostrukaLista<int> lista;
-    for (int i(1); i<=5; i++)
-        lista.dodajIspred(i);
-    const DvostrukaLista<int>& konst(lista);
-    std::cout << konst.brojElemenata() << " " << konst.trenutni();
-    std::cout << " " << konst[0] << std::endl;
-    lista.trenutni() = 15;
-    lista[0] = 20;
-    std::cout << konst.trenutni() << " " << konst[0] << std::endl;
-    //testKonstruktoraDvostruka<int>();
-    //testDodajIspredDvostruka<int>();
-    //testDodajIzaDvostruka<int>();
-    //testObrisi<int>();
-    //testPocetakKraj<int>();
-    //testTrenutni<int>();
-    //testPrethodniSlijedeci<int>();
-    //testOperatorUglaste<int>();
+    testKonstruktoraDvostruka<int>();
+    testDodajIspredDvostruka<int>();
+    testDodajIzaDvostruka<int>();
+    testObrisi<int>();
+    testPocetakKraj<int>();
+    testTrenutni<int>();
+    testPrethodniSlijedeci<int>();
+    testOperatorUglaste<int>();
+    testDajMaximum<int>();
     return 0;
 }
