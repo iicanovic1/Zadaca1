@@ -30,8 +30,6 @@ struct Cvor{
     Cvor *prethodni;
     Cvor (const T &element1, Cvor *prethodni1 ,Cvor *sljedeci1 = nullptr):
         element(element1),sljedeci(sljedeci1),prethodni(prethodni1){
-        if(prethodni != nullptr) prethodni->sljedeci = this;
-        if(sljedeci != nullptr) sljedeci->sljedeci = this;
     }
     Cvor(Cvor *prethodni1 = nullptr, Cvor *sljedeci1 = nullptr) :
     sljedeci(sljedeci1),prethodni(prethodni1){
@@ -55,26 +53,29 @@ private:
     void Iniciraj();
     void Unisti();
 public:
-    explicit  DvostrukaLista(){ Iniciraj(); };
-    ~DvostrukaLista()override{ Unisti(); };
-    int brojElemenata() const override{ return  dduzina+lduzina;};
-    T &trenutni() override{return  tekuci->sljedeci->element;};
-    T trenutni()const override{return  tekuci->sljedeci->element; };
-    bool prethodni() override;
-    bool sljedeci() override;
-    void pocetak() override{ tekuci = pocetakListe;};
-    void kraj() override{ tekuci = krajListe; };
-    void obrisi() override;
-    void dodajIspred(const T &el) override;
-    void dodajIza(const T &el) override;
-    T &operator[](int broj) override;
-    T operator[](int broj) const override;
-    DvostrukaLista<T> &operator = (const DvostrukaLista<T> &lista);
-    DvostrukaLista<T> &operator = (DvostrukaLista<T> &&lista) noexcept;
-    DvostrukaLista(const DvostrukaLista<T> &lista);
-    DvostrukaLista(DvostrukaLista<T> &&lista);
+    explicit  DvostrukaLista(){ Iniciraj(); }; //testirano
+    ~DvostrukaLista()override{ Unisti(); }; //testirano
+    int brojElemenata() const override{ return  dduzina+lduzina;}; //testirano
+    T &trenutni() override{return  tekuci->sljedeci->element;}; //testirano
+    T trenutni()const override{return  tekuci->sljedeci->element; }; //testirano
+    bool prethodni() override; //testirano
+    bool sljedeci() override; //testirano
+    void pocetak() override{ tekuci = pocetakListe; int privremena = this->brojElemenata();
+    dduzina = privremena; lduzina = 0;}; //testirano
+    void kraj() override{ tekuci = krajListe->prethodni->prethodni;
+        int privremena = this->brojElemenata();
+        dduzina = 0; lduzina = privremena;}; //testirano
+    void obrisi() override; //testirano
+    void dodajIspred(const T &el) override; //testirano
+    void dodajIza(const T &el) override; //testirano
+    T &operator[](int broj) override; //testirano
+    T operator[](int broj) const override; //testirano
+    DvostrukaLista<T> &operator = (const DvostrukaLista<T> &lista); //testirano
+    DvostrukaLista<T> &operator = (DvostrukaLista<T> &&lista) noexcept; //testirano
+    DvostrukaLista(const DvostrukaLista<T> &lista); //testirano
+    DvostrukaLista(DvostrukaLista<T> &&lista); //testirano
     template<typename T1>
-    friend void ispisiDvostruka ( DvostrukaLista<T1> lista);
+    friend void ispisiDvostruka ( DvostrukaLista<T1> lista); //testirano
 
 };
 
@@ -88,10 +89,11 @@ void ispisiDvostruka(DvostrukaLista<T> lista) {
     }
     std::cout <<  "Elementi :" << std::endl;
     Cvor<T> * privremeni = lista.pocetakListe->sljedeci;
-    while (privremeni != nullptr){
+    while (privremeni->sljedeci != nullptr){
         std::cout << privremeni->element<<" ";
         privremeni = privremeni->sljedeci;
     }
+    std::cout << "\n" << "Tekuci element : " << lista.tekuci->sljedeci->element << "\n";
 }
 
 template<typename T>
@@ -107,6 +109,7 @@ void DvostrukaLista<T>::Unisti() {
         tekuci = pocetakListe;
         pocetakListe = pocetakListe->sljedeci;
         delete tekuci;
+        tekuci = nullptr;
     }
     krajListe = tekuci = nullptr;
 }
@@ -124,7 +127,7 @@ bool DvostrukaLista<T>::prethodni() {
 
 template<typename T>
 bool DvostrukaLista<T>::sljedeci() {
-    if(tekuci != krajListe){
+    if(tekuci->sljedeci->sljedeci != krajListe){
         tekuci = tekuci->sljedeci;
         dduzina--;
         lduzina++;
@@ -135,14 +138,19 @@ bool DvostrukaLista<T>::sljedeci() {
 
 template<typename T>
 void DvostrukaLista<T>::obrisi() {
+    //std::cout << "Element koji se izbacuje : " << tekuci->sljedeci->element;
     if(dduzina == 0)
-        throw "Ništa za obrisati!\n";
-    std::cout << "Element koji se izbacuje : " << tekuci->sljedeci->element;
+         throw std::domain_error("Ništa za obrisati!\n");
     Cvor<T>* privremeni  = tekuci->sljedeci;
     privremeni->sljedeci->prethodni = tekuci;
     tekuci->sljedeci = privremeni->sljedeci;
     delete privremeni;
-    dduzina--;
+    if(dduzina == 1) {
+        tekuci = tekuci->prethodni;
+        lduzina--;
+    }else {
+        dduzina--;
+    }
 }
 
 template<typename T>
@@ -150,26 +158,30 @@ void DvostrukaLista<T>::dodajIspred(const T &el) {
     Cvor<T>* novi = new Cvor<T>(el, tekuci, tekuci->sljedeci );
     tekuci->sljedeci = novi;
     novi->sljedeci->prethodni = novi;
-    lduzina++;
-    tekuci = tekuci->sljedeci;
+    if(brojElemenata() == 0 ) dduzina++;
+    else lduzina++;
+    if(lduzina > 0)tekuci = tekuci->sljedeci;
 }
 
 template<typename T>
 void DvostrukaLista<T>::dodajIza(const T &el) {
-    Cvor<T> * pomocniTekuci = tekuci->sljedeci;
-    Cvor<T>* novi = new Cvor<T>(el, pomocniTekuci, pomocniTekuci->sljedeci );
-    pomocniTekuci->sljedeci = novi;
-    novi->sljedeci->prethodni = novi;
-    dduzina++;
+    if(brojElemenata() == 0) dodajIspred(el);
+    else {
+        Cvor<T> *pomocniTekuci = tekuci->sljedeci;
+        Cvor<T> *novi = new Cvor<T>(el, pomocniTekuci, pomocniTekuci->sljedeci);
+        pomocniTekuci->sljedeci = novi;
+        novi->sljedeci->prethodni = novi;
+        dduzina++;
+    }
 }
 
 template<typename T>
 T &DvostrukaLista<T>::operator[](int broj) {
-    if( broj < 0 || broj < dduzina+lduzina)
-        throw "Neprihvatljiv broj!";
+    if( broj < 0 || broj >= dduzina+lduzina)
+        throw std::domain_error("Neprihvatljiv broj!");
     int  k = 0;
     if(broj < lduzina)
-        k = lduzina-broj+1;
+        k = lduzina-broj;
     else if(broj == lduzina)
         return tekuci->sljedeci->element;
     else {
@@ -188,11 +200,11 @@ T &DvostrukaLista<T>::operator[](int broj) {
 
 template<typename T>
 T DvostrukaLista<T>::operator[](int broj) const {
-    if( broj < 0 || broj < dduzina+lduzina)
-        throw "Neprihvatljiv broj!";
+    if( broj < 0 || broj >= dduzina+lduzina)
+        throw std::domain_error("Neprihvatljiv broj!");
     int  k = 0;
     if(broj < lduzina)
-        k = lduzina-broj+1;
+        k = lduzina-broj;
     else if(broj == lduzina)
         return tekuci->sljedeci->element;
     else {
@@ -211,9 +223,11 @@ T DvostrukaLista<T>::operator[](int broj) const {
 
 template<typename T>
 DvostrukaLista<T> &DvostrukaLista<T>::operator=(const DvostrukaLista<T> &lista) {
+    if(this->pocetakListe == lista.pocetakListe &&
+            this->krajListe == lista.krajListe && this->tekuci == lista.tekuci
+                && this->brojElemenata() == lista.brojElemenata()) return *this;
     this->Unisti();
     pocetakListe=new Cvor<T>(*lista.pocetakListe);
-    krajListe =new Cvor<T>(*lista.krajListe);
     if(pocetakListe->sljedeci == krajListe) return *this;
     Cvor<T> *tempNova=pocetakListe;
     Cvor<T> *tempStara=lista.pocetakListe;
@@ -222,6 +236,7 @@ DvostrukaLista<T> &DvostrukaLista<T>::operator=(const DvostrukaLista<T> &lista) 
         tempNova=tempNova->sljedeci;
         tempStara=tempStara->sljedeci;
     }
+    tekuci = lista.tekuci;
     dduzina=lista.dduzina;
     lduzina = lista.lduzina;
     return *this;
@@ -245,7 +260,6 @@ DvostrukaLista<T> &DvostrukaLista<T>::operator=(DvostrukaLista<T> &&lista)  noex
 template<typename T>
 DvostrukaLista<T>::DvostrukaLista(const DvostrukaLista<T> &lista) {
     pocetakListe=new Cvor<T>(*lista.pocetakListe);
-    krajListe =new Cvor<T>(*lista.krajListe);
     if(pocetakListe->sljedeci == krajListe) return;
     Cvor<T> *tempNova=pocetakListe;
     Cvor<T> *tempStara=lista.pocetakListe;
@@ -254,6 +268,7 @@ DvostrukaLista<T>::DvostrukaLista(const DvostrukaLista<T> &lista) {
         tempNova=tempNova->sljedeci;
         tempStara=tempStara->sljedeci;
     }
+    tekuci = lista.tekuci;
     dduzina=lista.dduzina;
     lduzina = lista.lduzina;
 }
@@ -270,10 +285,129 @@ DvostrukaLista<T>::DvostrukaLista(DvostrukaLista<T> &&lista) {
     tekuci = nullptr;
 }
 
+//testtne FUNKCIJE
+
+template <typename T>
+bool testKonstruktoraDvostruka (){
+    DvostrukaLista<int> testnaLista ;
+    //ispisiDvostruka<int>(testnaLista);
+    return true;
+}
+
+template<typename T>
+bool testDodajIspredDvostruka(){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIspred(1);
+    testnaLista.dodajIspred(2);
+    testnaLista.dodajIspred(3);
+    testnaLista.dodajIspred(4);
+    testnaLista.dodajIspred(5);
+    ispisiDvostruka<int>(testnaLista);
+    return true;
+}
+
+template<typename T>
+bool testDodajIzaDvostruka (){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIza(1);
+    testnaLista.dodajIza(2);
+    testnaLista.dodajIza(3);
+    testnaLista.dodajIza(4);
+    testnaLista.dodajIza(5);
+    ispisiDvostruka<int>(testnaLista);
+    return true;
+}
+
+template<typename T>
+bool testObrisi (){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIspred(1);
+    testnaLista.obrisi();
+    ispisiDvostruka<int>(testnaLista);
+    return true;
+}
+
+template<typename T>
+bool testPocetakKraj (){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIza(1);
+    testnaLista.dodajIza(2);
+    testnaLista.dodajIza(3);
+    testnaLista.dodajIza(4);
+    testnaLista.dodajIza(5);
+    testnaLista.pocetak();
+    ispisiDvostruka<int>(testnaLista);
+    testnaLista.kraj();
+    ispisiDvostruka<int>(testnaLista);
+    return true;
+}
+
+template<typename T>
+bool testTrenutni (){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIza(1);
+    testnaLista.dodajIza(2);
+    testnaLista.dodajIza(3);
+    testnaLista.dodajIza(4);
+    testnaLista.dodajIza(5);
+    testnaLista.pocetak();
+    testnaLista.trenutni() = 100;
+    ispisiDvostruka<int>(testnaLista);
+    testnaLista.kraj();
+    testnaLista.trenutni() = 100;
+    ispisiDvostruka<int>(testnaLista);
+    return true;
+}
+
+template<typename T>
+bool testPrethodniSlijedeci (){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIza(1);
+    testnaLista.dodajIza(2);
+    testnaLista.dodajIza(3);
+    testnaLista.dodajIza(4);
+    testnaLista.dodajIza(5);
+    testnaLista.pocetak();
+    testnaLista.sljedeci();
+    testnaLista.trenutni() = 100;
+    ispisiDvostruka<int>(testnaLista);
+    testnaLista.kraj();
+    testnaLista.prethodni();
+    testnaLista.trenutni() = 100;
+    ispisiDvostruka<int>(testnaLista);
+    return true;
+}
+
+template<typename T>
+bool testOperatorUglaste (){
+    DvostrukaLista<int> testnaLista ;
+    testnaLista.dodajIza(1);
+    testnaLista.dodajIza(2);
+    testnaLista.dodajIza(3);
+    testnaLista.dodajIza(4);
+    testnaLista.dodajIza(5);
+    testnaLista[4] = 100;
+    ispisiDvostruka<int>(testnaLista);
+    return true;
+}
 
 int main() {
-    DvostrukaLista<int> test = DvostrukaLista<int>();
-    ispisiDvostruka(test);
-    std::cout << "Hello, World!" << std::endl;
+    DvostrukaLista<int> lista;
+    for (int i(1); i<=5; i++)
+        lista.dodajIspred(i);
+    const DvostrukaLista<int>& konst(lista);
+    std::cout << konst.brojElemenata() << " " << konst.trenutni();
+    std::cout << " " << konst[0] << std::endl;
+    lista.trenutni() = 15;
+    lista[0] = 20;
+    std::cout << konst.trenutni() << " " << konst[0] << std::endl;
+    //testKonstruktoraDvostruka<int>();
+    //testDodajIspredDvostruka<int>();
+    //testDodajIzaDvostruka<int>();
+    //testObrisi<int>();
+    //testPocetakKraj<int>();
+    //testTrenutni<int>();
+    //testPrethodniSlijedeci<int>();
+    //testOperatorUglaste<int>();
     return 0;
 }
